@@ -144,6 +144,10 @@ const (
 	ImageDir string = "/var/run/mydocker/images"
 )
 
+func makeContainerDir(containerName string) string {
+	return fmt.Sprintf("%s/%s", containerName)
+}
+
 func makeContainerMergedDir(containerName string) string {
 	path := fmt.Sprintf("%s/%s/merged", ContainersDir, containerName)
 	return path
@@ -206,7 +210,13 @@ func createContainerWorkspace(opts RunOptions) error {
 }
 
 func cleanContainerWorkspace(opts RunOptions) error {
-	return syscall.Unmount(makeContainerMergedDir(opts.containerName), syscall.MNT_DETACH)
+	if err := syscall.Unmount(makeContainerMergedDir(opts.containerName), syscall.MNT_DETACH); err != nil {
+		return err
+	}
+	if err := os.RemoveAll(makeContainerDir(opts.containerName)); err != nil {
+		return err
+	}
+	return nil
 }
 
 func makeImagePath(imageName string) string {
