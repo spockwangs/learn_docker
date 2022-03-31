@@ -9,6 +9,7 @@ import (
 	"strings"
 	"os/exec"
 	"syscall"
+	"io/ioutil"
 )
 
 type RunOptions struct {
@@ -103,6 +104,19 @@ var initCommand = cli.Command{
 	Usage: "Not intended for external use",
 	Action: func(ctx *cli.Context) error {
 		log.Printf("enter initCommand")
+		cmdArray, err := readCommand()
+		if err != nil {
+			return err
+		}
+		
+		path, err := exec.LookPath(cmdArray[0])
+		if err != nil {
+			return err
+		}
+		if err := syscall.Exec(path, cmdArray, os.Environ()); err != nil {
+			return err
+		}
+		
 		return nil
 	},
 }
@@ -125,4 +139,19 @@ const (
 func makeContainerCwd(containerName string) string {
 	path := fmt.Sprintf("%s/%s", ContainersDir, containerName)
 	return path
+}
+
+func readCommand() ([]string, error) {
+	pipe := os.NewFile(uintptr(3), "pipe")
+	defer pipe.Close()
+	msg, err := ioutil.ReadAll(pipe)
+	if err != nil {
+		return nil, err
+	}
+	s := string(msg)
+	cmdArray := strings.Split(s, " ")
+	if len(cmdArray) == 0 {
+		return nil, fmt.Errorf("empty command")
+	}
+	return cmdArray, nil
 }
