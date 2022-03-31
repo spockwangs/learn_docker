@@ -80,7 +80,7 @@ var runCommand = cli.Command{
 			cmd.Stderr = os.Stderr
 		}
 		cmd.ExtraFiles = []*os.File{readPipe}
-		cmd.Dir = makeContainerCwd(runOpts.containerName)
+		cmd.Dir = makeContainerMergedDir(runOpts.containerName)
 		if err = cmd.Start(); err != nil {
 			log.Printf("can't start command: %v, %v", cmd, err)
 			return err
@@ -93,6 +93,9 @@ var runCommand = cli.Command{
 		if runOpts.createTty {
 			cmd.Wait()
 			// TODO: 清理容器的目录
+			if err := cleanContainerWorkspace(runOpts); err != nil {
+				return err
+			}
 		}
 		
 		return nil
@@ -118,7 +121,7 @@ var initCommand = cli.Command{
 			return err
 		}
 		log.Printf("command path=%v", path)
-		if err := syscall.Exec(path, cmdArray[0:], os.Environ()); err != nil {
+		if err := syscall.Exec(path, cmdArray, os.Environ()); err != nil {
 			log.Printf("can't exec: %v", err)
 			return err
 		}
@@ -142,8 +145,18 @@ const (
 	ImageDir string = "/var/run/mydocker/images"
 )
 
-func makeContainerCwd(containerName string) string {
-	path := fmt.Sprintf("%s/%s", ContainersDir, containerName)
+func makeContainerMergedDir(containerName string) string {
+	path := fmt.Sprintf("%s/merged/%s", ContainersDir, containerName)
+	return path
+}
+
+func makeContainerUpperDir(containerName string) string {
+	path := fmt.Sprintf("%s/upper/%s", ContainersDir, containerName)
+	return path
+}
+
+func makeContainerWorkDir(containerName string) string {
+	path := fmt.Sprintf("%s/work/%s", ContainersDir, containerName)
 	return path
 }
 
@@ -164,21 +177,37 @@ func readCommand() ([]string, error) {
 }
 
 func createContainerWorkspace(opts RunOptions) error {
-	dir := makeContainerCwd(opts.containerName)
-	if err := os.MkdirAll(dir, 0777); err != nil {
-		return err
-	}
-
-	// Extract the image to work directory.
+	// Extract the image.
 	imagePath := makeImagePath(opts.imageName)
 	_, err := os.Stat(imagePath)
 	if err != nil {
 		return err
 	}
-	if _, err := exec.Command("tar", "-xvf", imagePath, "-C", dir).CombinedOutput(); err != nil {
+	if _, err := exec.Command("tar", "-xvf", fmt.Sprintf("%s.tar", imagePath), "-C", imagePath).CombinedOutput(); err != nil {
+		return err
+	}
+
+	mergedDir := makeContainerMergedDir(opts.containerName)
+	if err := os.MkdirAll(mergedDir, 0777); err != nil {
+		return err
+	}
+	upperDir := makeContainerUpperDir(opts.containerName)
+	if err := os.MkdirAll(upperDir, 0777); err != nil {
+		return err
+	}
+	workDir := makeContainerWorkDir(opts.containerName)
+	if err := os.MkdirAll(workDir, 0777); err != nil {
+		return err
+	}
+	
+	if err := syscall.Mount("overlay", mergedDir, "overlay", 0, fmt.Sprintf("lowerdir=%s,upperdir=%s,workdir=%s", imagePath, upperDir, workDir)); err != nil {
 		return err
 	}
 	return nil
+}
+
+func cleanContainerWorkspace(opts RunOptions) error {
+	return syscall.Unmount(makeContainerMergedDir(opts.containerName), syscall.MNT_DETACH)
 }
 
 func makeImagePath(imageName string) string {
