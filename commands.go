@@ -32,6 +32,14 @@ var runCommand = cli.Command{
 			Name: "name",
 			Usage: "container name",
 		},
+		cli.StringFlag{
+			Name: "m",
+			Usage: "memory limit",
+		},
+		cli.StringFlag{
+			Name: "cpushare",
+			Usage: "cpushare",
+		},
 	},
 	Action: func(ctx *cli.Context) error {
 		if len(ctx.Args()) < 2 {
@@ -53,22 +61,17 @@ var runCommand = cli.Command{
 		}
 		log.Printf("runOpts=%v", runOpts)
 
-		readPipe, writePipe, err := os.Pipe()
-		if err != nil {
-			log.Printf("Create pipe failed: %v", err)
-			return err
+		subsystemConfig := SubsystemConfig{
+			cpuShare: ctx.String("cpushare"),
+			memory: ctx.String("m"),
 		}
+
 
 		initCmd, err := os.Readlink("/proc/self/exe")
 		if err != nil {
 			log.Printf("can't get init command: %v", err)
 			return err
 		}
-
-		if err := createContainerWorkspace(runOpts); err != nil {
-			return err
-		}
-
 		cmd := exec.Command(initCmd, "init")
 		cmd.SysProcAttr = &syscall.SysProcAttr{
 			Cloneflags: syscall.CLONE_NEWUTS | syscall.CLONE_NEWPID | syscall.CLONE_NEWNS | syscall.CLONE_NEWNET | syscall.CLONE_NEWIPC,
@@ -79,13 +82,28 @@ var runCommand = cli.Command{
 			cmd.Stdout = os.Stdout
 			cmd.Stderr = os.Stderr
 		}
+		readPipe, writePipe, err := os.Pipe()
+		if err != nil {
+			log.Printf("Create pipe failed: %v", err)
+			return err
+		}
 		cmd.ExtraFiles = []*os.File{readPipe}
 		cmd.Dir = makeContainerMergedDir(runOpts.containerName)
+		if err := createContainerWorkspace(runOpts); err != nil {
+			return err
+		}
 		if err = cmd.Start(); err != nil {
 			log.Printf("can't start command: %v, %v", cmd, err)
 			return err
 		}
 
+		cgroup := NewCgroup(runOpts.containerId)
+		if err := cgroup.Set(subsystemConfig); err != nil {
+			return err
+		}
+		cgroup.Apply(cmd.Process.Pid)
+		defer cgroup.Destroy()
+		
 		log.Printf("sending command: %v", runOpts.command)
 		writePipe.WriteString(runOpts.command)
 		writePipe.Close()
