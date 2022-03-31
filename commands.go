@@ -211,7 +211,7 @@ func cleanContainerWorkspace(opts RunOptions) error {
 }
 
 func makeImagePath(imageName string) string {
-	return fmt.Sprintf("%s/%s.tar", ImageDir, imageName)
+	return fmt.Sprintf("%s/%s", ImageDir, imageName)
 }
 
 func setUpMountPoints() error {
