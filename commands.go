@@ -145,7 +145,7 @@ const (
 )
 
 func makeContainerDir(containerName string) string {
-	return fmt.Sprintf("%s/%s", containerName)
+	return fmt.Sprintf("%s/%s", ContainersDir, containerName)
 }
 
 func makeContainerMergedDir(containerName string) string {
