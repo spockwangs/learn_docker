@@ -92,7 +92,6 @@ var runCommand = cli.Command{
 
 		if runOpts.createTty {
 			cmd.Wait()
-			// TODO: 清理容器的目录
 			if err := cleanContainerWorkspace(runOpts); err != nil {
 				return err
 			}
@@ -146,17 +145,17 @@ const (
 )
 
 func makeContainerMergedDir(containerName string) string {
-	path := fmt.Sprintf("%s/merged/%s", ContainersDir, containerName)
+	path := fmt.Sprintf("%s/%s/merged", ContainersDir, containerName)
 	return path
 }
 
 func makeContainerUpperDir(containerName string) string {
-	path := fmt.Sprintf("%s/upper/%s", ContainersDir, containerName)
+	path := fmt.Sprintf("%s/%s/upper", ContainersDir, containerName)
 	return path
 }
 
 func makeContainerWorkDir(containerName string) string {
-	path := fmt.Sprintf("%s/work/%s", ContainersDir, containerName)
+	path := fmt.Sprintf("%s/%s/work", ContainersDir, containerName)
 	return path
 }
 
