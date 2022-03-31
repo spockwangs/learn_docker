@@ -65,6 +65,10 @@ var runCommand = cli.Command{
 			return err
 		}
 
+		if err := createContainerWorkspace(runOpts); err != nil {
+			return err
+		}
+
 		cmd := exec.Command(initCmd, "init")
 		cmd.SysProcAttr = &syscall.SysProcAttr{
 			Cloneflags: syscall.CLONE_NEWUTS | syscall.CLONE_NEWPID | syscall.CLONE_NEWNS | syscall.CLONE_NEWNET | syscall.CLONE_NEWIPC,
@@ -77,10 +81,6 @@ var runCommand = cli.Command{
 		}
 		cmd.ExtraFiles = []*os.File{readPipe}
 		cmd.Dir = makeContainerCwd(runOpts.containerName)
-		if err = os.MkdirAll(cmd.Dir, 0777); err != nil {
-			log.Printf("can't make directory `%v`: %v", cmd.Dir, err)
-			return err
-		}
 		if err = cmd.Start(); err != nil {
 			log.Printf("can't start command: %v, %v", cmd, err)
 			return err
@@ -109,11 +109,17 @@ var initCommand = cli.Command{
 			return err
 		}
 		
+		if err := setUpMountPoints(); err != nil {
+			return err
+		}
+		
 		path, err := exec.LookPath(cmdArray[0])
 		if err != nil {
 			return err
 		}
-		if err := syscall.Exec(path, cmdArray, os.Environ()); err != nil {
+		log.Printf("command path=%v", path)
+		if err := syscall.Exec(path, cmdArray[0:], os.Environ()); err != nil {
+			log.Printf("can't exec: %v", err)
 			return err
 		}
 		
@@ -142,7 +148,8 @@ func makeContainerCwd(containerName string) string {
 }
 
 func readCommand() ([]string, error) {
-	pipe := os.NewFile(uintptr(3), "pipe")
+	const ReadPipe = uintptr(3)
+	pipe := os.NewFile(ReadPipe, "pipe")
 	defer pipe.Close()
 	msg, err := ioutil.ReadAll(pipe)
 	if err != nil {
@@ -154,4 +161,67 @@ func readCommand() ([]string, error) {
 		return nil, fmt.Errorf("empty command")
 	}
 	return cmdArray, nil
+}
+
+func createContainerWorkspace(opts RunOptions) error {
+	dir := makeContainerCwd(opts.containerName)
+	if err := os.MkdirAll(dir, 0777); err != nil {
+		return err
+	}
+
+	// Extract the image to work directory.
+	imagePath := makeImagePath(opts.imageName)
+	_, err := os.Stat(imagePath)
+	if err != nil {
+		return err
+	}
+	if _, err := exec.Command("tar", "-xvf", imagePath, "-C", dir).CombinedOutput(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func makeImagePath(imageName string) string {
+	return fmt.Sprintf("%s/%s.tar", ImageDir, imageName)
+}
+
+func setUpMountPoints() error {
+	cwd, err := os.Getwd()
+	if err != nil {
+		return err
+	}
+
+	if err := pivotRoot(cwd); err != nil {
+		return err
+	}
+	if err := syscall.Mount("proc", "/proc", "proc", syscall.MS_NOEXEC | syscall.MS_NOSUID | syscall.MS_NODEV, ""); err != nil {
+		log.Printf("can't mount proc: %v", err)
+		return err
+	}
+	if err := syscall.Mount("tmpfs", "/dev", "tmpfs", syscall.MS_NOSUID|syscall.MS_STRICTATIME, "mode=755"); err != nil {
+		log.Printf("can't mount tmpfs: %v", err)
+		return err
+	}
+	return nil
+}
+
+func pivotRoot(path string) error {
+	if err := syscall.Mount(path, path, "bind", syscall.MS_BIND, ""); err != nil {
+		return err
+	}
+	oldRootFilename := "old_root"
+	oldRoot := fmt.Sprintf("%s/%s", path, oldRootFilename)
+	if err := os.MkdirAll(oldRoot, 0777); err != nil {
+		return err
+	}
+	if err := syscall.PivotRoot(path, oldRoot); err != nil {
+		return err
+	}
+	if err := syscall.Chdir("/"); err != nil {
+		return err
+	}
+	if err := syscall.Unmount(oldRootFilename, syscall.MNT_DETACH); err != nil {
+		return err
+	}
+	return os.Remove(oldRootFilename)
 }
