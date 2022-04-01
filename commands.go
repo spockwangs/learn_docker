@@ -19,6 +19,7 @@ type RunOptions struct {
 	containerId   string
 	imageName     string
 	command       string
+	volumes []string
 }
 
 var runCommand = cli.Command{
@@ -58,6 +59,10 @@ var runCommand = cli.Command{
 			Name:  "cpus",
 			Usage: "specify how many CPUs to run",
 		},
+		cli.StringFlag{
+			Name: "v",
+			Usage: "mount volumes",
+		},
 	},
 	Action: func(ctx *cli.Context) error {
 		if len(ctx.Args()) < 2 {
@@ -76,6 +81,10 @@ var runCommand = cli.Command{
 		runOpts.containerId = makeContainerId()
 		if runOpts.containerName == "" {
 			runOpts.containerName = runOpts.containerId
+		}
+		runOpts.volumes = strings.Split(ctx.String("v"), ":")
+		if len(runOpts.volumes) != 2 {
+			return fmt.Errorf("bad volumes")
 		}
 
 		subsystemConfig := SubsystemConfig{
@@ -298,10 +307,23 @@ func createContainerWorkspace(opts RunOptions) error {
 		return err
 	}
 
-	if err := syscall.Mount("overlay", mergedDir, "overlay", 0,
-		fmt.Sprintf("lowerdir=%s,upperdir=%s,workdir=%s", imagePath, upperDir, workDir)); err != nil {
+	if err := syscall.Mount("overlay", mergedDir, "overlay", 0, fmt.Sprintf("lowerdir=%s,upperdir=%s,workdir=%s", imagePath, upperDir, workDir)); err != nil {
 		return err
 	}
+
+	if len(opts.volumes) == 2 {
+		if err := os.MkdirAll(opts.volumes[0], 0755); err != nil {
+			return err
+		}
+		containerVolumePath := path.Join(mergedDir, opts.volumes[1])
+		if err := os.MkdirAll(containerVolumePath, 0755); err != nil {
+			return err
+		}
+		if err := syscall.Mount(opts.volumes[0], containerVolumePath, "bind", syscall.MS_BIND, ""); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
