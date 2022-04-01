@@ -218,7 +218,7 @@ var commitCommand = cli.Command{
 		}
 		source := fmt.Sprintf("%s/*", containerPath)
 		log.Printf("source=%v, dest=%v", source, imagePath)
-		if out, err := exec.Command("cp", "-a", , imagePath).CombinedOutput(); err != nil {
+		if out, err := exec.Command("cp", "-a", source, imagePath).CombinedOutput(); err != nil {
 			log.Printf("out=%v", out)
 			return err
 		}
