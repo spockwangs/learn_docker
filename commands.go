@@ -83,8 +83,8 @@ var runCommand = cli.Command{
 			cpuQuota: ctx.Int("cpu-quota"),
 			cpus : ctx.Float64("cpus"),
 		}
-
-
+		log.Printf("runOpts=%v, subsystemConfig=%v", runOpts, subsystemConfig)
+		
 		initCmd, err := os.Readlink("/proc/self/exe")
 		if err != nil {
 			log.Printf("can't get init command: %v", err)
