@@ -23,7 +23,8 @@ type RunOptions struct {
 
 var runCommand = cli.Command{
 	Name:  "run",
-	Usage: `Run a container: mydocker [-i] image command`,
+	Usage: "Run a container from an image",
+	UsageText: `mydocker run [OPTIONS] image command`
 	Flags: []cli.Flag{
 		cli.BoolFlag{
 			Name:  "i",
@@ -184,6 +185,38 @@ var importCommand = cli.Command{
 			return err
 		}
 		if _, err := exec.Command("tar", "-xvf", tarballPath, "-C", imagePath).CombinedOutput(); err != nil {
+			return err
+		}
+		return nil
+	},
+}
+
+var commitCommand = cli.Command{
+	Name: "commit",
+	Usage: "commit the changes of the container to an new image",
+	UsageText: `mydocker commit container image`,
+	Action: func(ctx *cli.Context) error {
+		if len(ctx.Args()) != 2 {
+			return fmt.Errorf("missing container name and/or image name")
+		}
+
+		containerName := ctx.Args().Get(0)
+		imageName := ctx.Args().Get(1)
+		containerPath := makeContainerMergedDir(containerName)
+		if err := os.Stat(containerPath); err != nil {
+			if os.IsNotExist(err) {
+				return fmt.Errorf("the container `%v` does not exist", containerName)
+			}
+			return err
+		}
+		imagePath := makeImagePath(imageName)
+		if err := os.Stat(imagePath); err == nil {
+			return fmt.Errorf("the image `%v` already exits; please change a name", imageName)
+		}
+		if err := os.MkdirAll(imagePath, 0755); err != nil {
+			return err
+		}
+		if _, err := exec.Command("cp", "-r", containerPath, imagePath).CombinedOutput(); err != nil {
 			return err
 		}
 		return nil
