@@ -380,5 +380,6 @@ func pivotRoot(path string) error {
 	// if err := syscall.Unmount(oldRootFilename, syscall.MNT_DETACH); err != nil {
 	// 	return err
 	// }
-	return os.Remove(oldRootFilename)
+	//return os.Remove(oldRootFilename)
+	return nil
 }
