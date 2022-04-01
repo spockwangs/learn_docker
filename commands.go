@@ -251,6 +251,7 @@ func createContainerWorkspace(opts RunOptions) error {
 }
 
 func cleanContainerWorkspace(opts RunOptions) error {
+	log.Printf("start to clean container workspace")
 	if err := syscall.Unmount(makeContainerMergedDir(opts.containerName), syscall.MNT_DETACH); err != nil {
 		return err
 	}
