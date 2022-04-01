@@ -130,7 +130,7 @@ func (c *CpuSubsystem) Set(id string, config SubsystemConfig) error {
 	}
 	if config.cpus != 0 {
 		config.cpuPeriod = 1000000
-		config.cpuQuota = int(config.cpus * float64(config.cpuQuota))
+		config.cpuQuota = int(config.cpus * float64(config.cpuPeriod))
 	}
 	
 	cgroupPath, err := GetCgroupPath(c.Name(), id)
