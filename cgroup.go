@@ -91,6 +91,10 @@ func Apply(sys Subsystem, id string, pid int) error {
 	if err != nil {
 		return err
 	}
+	if _, err := os.Stat(cgroupPath); err != nil {
+		return nil
+	}
+	
 	if err := ioutil.WriteFile(path.Join(cgroupPath, "cgroup.procs"), []byte(strconv.Itoa(pid)), 0644); err != nil {
 		return err
 	}
@@ -178,7 +182,7 @@ func (c *CpusetSubsystem) Set(id string, config SubsystemConfig) error {
 		return err
 	}
 	if err := os.MkdirAll(cgroupPath, 0755); err != nil {
-		return nil
+		return err
 	}
 
 	if err := ioutil.WriteFile(path.Join(cgroupPath, "cpuset.cpus"), []byte(config.cpuSet), 0644); err != nil {
