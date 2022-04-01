@@ -11,7 +11,6 @@ import (
 	"strings"
 	"syscall"
 	"time"
-	"path"
 )
 
 type RunOptions struct {
