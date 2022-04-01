@@ -138,7 +138,7 @@ func (c *CpuSubsystem) Set(id string, config SubsystemConfig) error {
 		return err
 	}
 	if err := os.MkdirAll(cgroupPath, 0755); err != nil {
-		return nil
+		return err
 	}
 
 	if config.cpuShare != 0 {
