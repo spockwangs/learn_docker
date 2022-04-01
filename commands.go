@@ -216,7 +216,7 @@ var commitCommand = cli.Command{
 		if err := os.MkdirAll(imagePath, 0755); err != nil {
 			return err
 		}
-		if _, err := exec.Command("cp", "-r", containerPath, imagePath).CombinedOutput(); err != nil {
+		if _, err := exec.Command("cp", "-a", path.Join(containerPath, "*"), imagePath).CombinedOutput(); err != nil {
 			return err
 		}
 		return nil
