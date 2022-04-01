@@ -172,14 +172,18 @@ var initCommand = cli.Command{
 var importCommand = cli.Command{
 	Name: "import",
 	Usage: "import a tarball to create an image",
-	UsageText: "import file image",
+	UsageText: "mydocker import file image",
 	Action: func(ctx *cli.Context) error {
 		if len(ctx.Args()) != 2 {
 			return fmt.Errorf("missing tarball path and/or image name")
 		}
 		tarballPath := ctx.Args().Get(0)
 		imageName := ctx.Args().Get(1)
-		if _, err := exec.Command("tar", "-xvf", tarballPath, "-C", makeImagePath(imageName)).CombinedOutput(); err != nil {
+		imagePath := makeImagePath(imageName)
+		if err := os.MkdirAll(imagePath); err != nil {
+			return err
+		}
+		if _, err := exec.Command("tar", "-xvf", tarballPath, "-C", imagePath).CombinedOutput(); err != nil {
 			return err
 		}
 		return nil
