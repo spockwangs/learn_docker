@@ -10,6 +10,7 @@ import (
 	"os/exec"
 	"syscall"
 	"io/ioutil"
+	"time"
 )
 
 type RunOptions struct {
@@ -171,6 +172,7 @@ var initCommand = cli.Command{
 func makeContainerId() string {
 	const alphanum = "0123456789abcdefghijklmnopqrstuvwxyz"
 	const alphanumLen = len(alphanum)
+	rand.Seed(time.Now().UnixNano())
 	b := make([]byte, alphanumLen)
 	for i := range b {
 		b[i] = alphanum[rand.Intn(alphanumLen)]
