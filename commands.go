@@ -82,6 +82,7 @@ var runCommand = cli.Command{
 			cpuPeriod: ctx.Int("cpu-period"),
 			cpuQuota: ctx.Int("cpu-quota"),
 			cpus : ctx.Float64("cpus"),
+			cpuSet: ctx.String("cpuset-cpus"),
 		}
 		log.Printf("runOpts=%v, subsystemConfig=%v", runOpts, subsystemConfig)
 		
