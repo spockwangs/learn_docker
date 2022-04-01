@@ -180,7 +180,7 @@ var importCommand = cli.Command{
 		tarballPath := ctx.Args().Get(0)
 		imageName := ctx.Args().Get(1)
 		imagePath := makeImagePath(imageName)
-		if err := os.MkdirAll(imagePath); err != nil {
+		if err := os.MkdirAll(imagePath, 0755); err != nil {
 			return err
 		}
 		if _, err := exec.Command("tar", "-xvf", tarballPath, "-C", imagePath).CombinedOutput(); err != nil {
