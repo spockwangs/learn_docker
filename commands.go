@@ -24,7 +24,7 @@ type RunOptions struct {
 var runCommand = cli.Command{
 	Name:  "run",
 	Usage: "Run a container from an image",
-	UsageText: `mydocker run [OPTIONS] image command`,
+	UsageText: `mydocker run [OPTIONS] IMAGE COMMAND`,
 	Flags: []cli.Flag{
 		cli.BoolFlag{
 			Name:  "i",
@@ -173,7 +173,7 @@ var initCommand = cli.Command{
 var importCommand = cli.Command{
 	Name: "import",
 	Usage: "import a tarball to create an image",
-	UsageText: "mydocker import file image",
+	UsageText: "mydocker import FILE IMAGE",
 	Action: func(ctx *cli.Context) error {
 		if len(ctx.Args()) != 2 {
 			return fmt.Errorf("missing tarball path and/or image name")
@@ -194,7 +194,7 @@ var importCommand = cli.Command{
 var commitCommand = cli.Command{
 	Name: "commit",
 	Usage: "commit the changes of the container to an new image",
-	UsageText: `mydocker commit container image`,
+	UsageText: `mydocker commit CONTAINER IMAGE`,
 	Action: func(ctx *cli.Context) error {
 		if len(ctx.Args()) != 2 {
 			return fmt.Errorf("missing container name and/or image name")
