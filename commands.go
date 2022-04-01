@@ -24,7 +24,7 @@ type RunOptions struct {
 var runCommand = cli.Command{
 	Name:  "run",
 	Usage: "Run a container from an image",
-	UsageText: `mydocker run [OPTIONS] image command`
+	UsageText: `mydocker run [OPTIONS] image command`,
 	Flags: []cli.Flag{
 		cli.BoolFlag{
 			Name:  "i",
