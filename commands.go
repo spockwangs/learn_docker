@@ -106,7 +106,7 @@ var runCommand = cli.Command{
 			return err
 		}
 		cmd.ExtraFiles = []*os.File{readPipe}
-		cmd.Dir = makeContainerMergedDir(runOpts.containerName)
+		//cmd.Dir = makeContainerMergedDir(runOpts.containerName)
 		if err := createContainerWorkspace(runOpts); err != nil {
 			return err
 		}
@@ -147,9 +147,9 @@ var initCommand = cli.Command{
 			return err
 		}
 		
-		if err := setUpMountPoints(); err != nil {
-			return err
-		}
+		// if err := setUpMountPoints(); err != nil {
+		// 	return err
+		// }
 		
 		path, err := exec.LookPath(cmdArray[0])
 		if err != nil {
