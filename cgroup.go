@@ -91,7 +91,7 @@ func Apply(sys Subsystem, id string, pid int) error {
 	if err != nil {
 		return err
 	}
-	if err := ioutil.WriteFile(path.Join(cgroupPath, "procs"), []byte(strconv.Itoa(pid)), 0644); err != nil {
+	if err := ioutil.WriteFile(path.Join(cgroupPath, "cgroup.procs"), []byte(strconv.Itoa(pid)), 0644); err != nil {
 		return err
 	}
 	return nil
