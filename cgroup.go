@@ -14,8 +14,12 @@ type Cgroup struct {
 }
 
 type SubsystemConfig struct {
-	cpuShare string
+	cpuShare int
 	memory string
+	cpuPeriod int
+	cpuQuota int
+	cpuSet string
+	cpus float64
 }
 
 func NewCgroup(id string) *Cgroup {
@@ -36,7 +40,7 @@ func (c *Cgroup) Set(config SubsystemConfig) error {
 
 func (c *Cgroup) Apply(pid int) error {
 	for _, subsys := range subsystems {
-		err := subsys.Apply(c.id, pid)
+		err := Apply(subsys, c.id, pid)
 		if err != nil {
 			return err
 		}
@@ -46,7 +50,7 @@ func (c *Cgroup) Apply(pid int) error {
 
 func (c *Cgroup) Destroy() error {
 	for _, subsys := range subsystems {
-		err := subsys.Destroy(c.id)
+		err := Destroy(subsys, c.id)
 		if err != nil {
 			return err
 		}
@@ -82,16 +86,34 @@ func FindCgroupRoot(subsystemName string) (string, error) {
 	return "", scanner.Err()
 }
 
+func Apply(sys Subsystem, id string, pid int) error {
+	cgroupPath, err := GetCgroupPath(sys.Name(), id)
+	if err != nil {
+		return err
+	}
+	if err := ioutil.WriteFile(path.Join(cgroupPath, "procs"), []byte(strconv.Itoa(pid)), 0644); err != nil {
+		return err
+	}
+	return nil
+}
+
+func Destroy(sys Subsystem, id string) error {
+	cgroupPath, err := GetCgroupPath(sys.Name(), id)
+	if err != nil {
+		return err
+	}
+	return os.RemoveAll(cgroupPath)
+}
+
 type Subsystem interface {
 	Name() string
 	Set(id string, config SubsystemConfig) error
-	Apply(id string, pid int) error
-	Destroy(id string) error
 }
 
 var (
 	subsystems = []Subsystem{
 		&CpuSubsystem{},
+		&CpusetSubsystem{},
 	}
 )
 
@@ -103,8 +125,12 @@ func (c *CpuSubsystem) Name() string {
 }
 
 func (c *CpuSubsystem) Set(id string, config SubsystemConfig) error {
-	if config.cpuShare == "" {
+	if config.cpuShare == 0 && config.cpuPeriod == 0 && config.cpuQuota == 0 && config.cpus == 0 {
 		return nil
+	}
+	if config.cpus != 0 {
+		config.cpuPeriod = 1000000
+		config.cpuQuota = int(config.cpus * float64(config.cpuQuota))
 	}
 	
 	cgroupPath, err := GetCgroupPath(c.Name(), id)
@@ -114,27 +140,49 @@ func (c *CpuSubsystem) Set(id string, config SubsystemConfig) error {
 	if err := os.MkdirAll(cgroupPath, 0755); err != nil {
 		return nil
 	}
-	if err := ioutil.WriteFile(path.Join(cgroupPath, "cpu.shares"), []byte(config.cpuShare), 0644); err != nil {
-		return err
+
+	if config.cpuShare != 0 {
+		if err := ioutil.WriteFile(path.Join(cgroupPath, "cpu.shares"), []byte(strconv.Itoa(config.cpuShare)), 0644); err != nil {
+			return err
+		}
 	}
+	if config.cpuPeriod != 0 {
+		if err := ioutil.WriteFile(path.Join(cgroupPath, "cpu.cfs_period_us"), []byte(strconv.Itoa(config.cpuPeriod)), 0644); err != nil {
+			return err
+		}
+	}		
+	if config.cpuQuota != 0 {
+		if err := ioutil.WriteFile(path.Join(cgroupPath, "cpu.cfs_quota_us"), []byte(strconv.Itoa(config.cpuQuota)), 0644); err != nil {
+			return err
+		}
+	}		
+		
 	return nil
 }
 
-func (c *CpuSubsystem) Apply(id string, pid int) error {
+type CpusetSubsystem struct {
+}
+
+func (c *CpusetSubsystem) Name() string {
+	return "cpuset"
+}
+
+
+func (c *CpusetSubsystem) Set(id string, config SubsystemConfig) error {
+	if config.cpuSet == "" {
+		return nil
+	}
+
 	cgroupPath, err := GetCgroupPath(c.Name(), id)
 	if err != nil {
 		return err
 	}
-	if err := ioutil.WriteFile(path.Join(cgroupPath, "tasks"), []byte(strconv.Itoa(pid)), 0644); err != nil {
+	if err := os.MkdirAll(cgroupPath, 0755); err != nil {
+		return nil
+	}
+
+	if err := ioutil.WriteFile(path.Join(cgroupPath, "cpuset.cpus"), []byte(config.cpuSet), 0644); err != nil {
 		return err
 	}
 	return nil
-}
-
-func (c *CpuSubsystem) Destroy(id string) error {
-	cgroupPath, err := GetCgroupPath(c.Name(), id)
-	if err != nil {
-		return err
-	}
-	return os.RemoveAll(cgroupPath)
 }

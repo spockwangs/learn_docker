@@ -37,8 +37,24 @@ var runCommand = cli.Command{
 			Usage: "memory limit",
 		},
 		cli.StringFlag{
-			Name: "cpushare",
+			Name: "cpu-shares",
 			Usage: "cpushare",
+		},
+		cli.IntFlag{
+			Name: "cpu-period",
+			Usage: "CPU period in microseconds",
+		},
+		cli.IntFlag{
+			Name: "cpu-quota",
+			Usage: "CPU quota in microseconds",
+		},
+		cli.StringFlag{
+			Name: "cpuset-cpus",
+			Usage: "specify which CPUs to run",
+		},
+		cli.Float64Flag{
+			Name: "cpus",
+			Usage: "specify how many CPUs to run",
 		},
 	},
 	Action: func(ctx *cli.Context) error {
@@ -59,11 +75,13 @@ var runCommand = cli.Command{
 		if runOpts.containerName == "" {
 			runOpts.containerName = runOpts.containerId
 		}
-		log.Printf("runOpts=%v", runOpts)
 
 		subsystemConfig := SubsystemConfig{
-			cpuShare: ctx.String("cpushare"),
+			cpuShare: ctx.Int("cpu-shares"),
 			memory: ctx.String("m"),
+			cpuPeriod: ctx.Int("cpu-period"),
+			cpuQuota: ctx.Int("cpu-quota"),
+			cpus : ctx.Float64("cpus"),
 		}
 
 
