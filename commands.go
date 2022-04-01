@@ -363,7 +363,7 @@ func setUpMountPoints() error {
 }
 
 func pivotRoot(path string) error {
-	if err := syscall.Mount(path, path, "bind", syscall.MS_BIND, ""); err != nil {
+	if err := syscall.Mount(path, path, "bind", syscall.MS_BIND|syscall.MS_REC, ""); err != nil {
 		return err
 	}
 	oldRootFilename := "old_root"
