@@ -216,10 +216,7 @@ var commitCommand = cli.Command{
 		if err := os.MkdirAll(imagePath, 0755); err != nil {
 			return err
 		}
-		source := fmt.Sprintf("%s/*", containerPath)
-		log.Printf("source=%v, dest=%v", source, imagePath)
-		if out, err := exec.Command("cp", "-a", source, imagePath).CombinedOutput(); err != nil {
-			log.Printf("out=%v", out)
+		if out, err := exec.Command("sh", "-c", fmt.Sprintf("cp -a %s/* %s", containerPath, imagePath)).CombinedOutput(); err != nil {
 			return err
 		}
 		return nil
