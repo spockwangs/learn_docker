@@ -1,60 +1,60 @@
 package main
 
 import (
-	"log"
 	"fmt"
 	"github.com/urfave/cli"
+	"io/ioutil"
+	"log"
 	"math/rand"
 	"os"
-	"strings"
 	"os/exec"
+	"strings"
 	"syscall"
-	"io/ioutil"
 	"time"
 )
 
 type RunOptions struct {
-	createTty bool
+	createTty     bool
 	containerName string
-	containerId string
-	imageName string
-	command string
+	containerId   string
+	imageName     string
+	command       string
 }
-	
+
 var runCommand = cli.Command{
-	Name: "run",
+	Name:  "run",
 	Usage: `Run a container: mydocker [-i] image command`,
 	Flags: []cli.Flag{
 		cli.BoolFlag{
-			Name: "i",
+			Name:  "i",
 			Usage: "enable tty",
 		},
 		cli.StringFlag{
-			Name: "name",
+			Name:  "name",
 			Usage: "container name",
 		},
 		cli.StringFlag{
-			Name: "m",
+			Name:  "m",
 			Usage: "memory limit",
 		},
 		cli.StringFlag{
-			Name: "cpu-shares",
+			Name:  "cpu-shares",
 			Usage: "cpushare",
 		},
 		cli.IntFlag{
-			Name: "cpu-period",
+			Name:  "cpu-period",
 			Usage: "CPU period in microseconds",
 		},
 		cli.IntFlag{
-			Name: "cpu-quota",
+			Name:  "cpu-quota",
 			Usage: "CPU quota in microseconds",
 		},
 		cli.StringFlag{
-			Name: "cpuset-cpus",
+			Name:  "cpuset-cpus",
 			Usage: "specify which CPUs to run",
 		},
 		cli.Float64Flag{
-			Name: "cpus",
+			Name:  "cpus",
 			Usage: "specify how many CPUs to run",
 		},
 	},
@@ -78,15 +78,15 @@ var runCommand = cli.Command{
 		}
 
 		subsystemConfig := SubsystemConfig{
-			cpuShare: ctx.Int("cpu-shares"),
-			memory: ctx.String("m"),
+			cpuShare:  ctx.Int("cpu-shares"),
+			memory:    ctx.String("m"),
 			cpuPeriod: ctx.Int("cpu-period"),
-			cpuQuota: ctx.Int("cpu-quota"),
-			cpus : ctx.Float64("cpus"),
-			cpuSet: ctx.String("cpuset-cpus"),
+			cpuQuota:  ctx.Int("cpu-quota"),
+			cpus:      ctx.Float64("cpus"),
+			cpuSet:    ctx.String("cpuset-cpus"),
 		}
 		log.Printf("runOpts=%v, subsystemConfig=%v", runOpts, subsystemConfig)
-		
+
 		initCmd, err := os.Readlink("/proc/self/exe")
 		if err != nil {
 			log.Printf("can't get init command: %v", err)
@@ -94,7 +94,7 @@ var runCommand = cli.Command{
 		}
 		cmd := exec.Command(initCmd, "init")
 		cmd.SysProcAttr = &syscall.SysProcAttr{
-			Cloneflags: syscall.CLONE_NEWUTS | syscall.CLONE_NEWPID | syscall.CLONE_NEWNS | syscall.CLONE_NEWNET | syscall.CLONE_NEWIPC,
+			Cloneflags:   syscall.CLONE_NEWUTS | syscall.CLONE_NEWPID | syscall.CLONE_NEWNS | syscall.CLONE_NEWNET | syscall.CLONE_NEWIPC,
 			Unshareflags: syscall.CLONE_NEWNS,
 		}
 		if runOpts.createTty {
@@ -125,7 +125,7 @@ var runCommand = cli.Command{
 			return err
 		}
 		defer cgroup.Destroy()
-		
+
 		log.Printf("sending command: %v", runOpts.command)
 		writePipe.WriteString(runOpts.command)
 		writePipe.Close()
@@ -136,13 +136,13 @@ var runCommand = cli.Command{
 				return err
 			}
 		}
-		
+
 		return nil
 	},
 }
 
 var initCommand = cli.Command{
-	Name: "init",
+	Name:  "init",
 	Usage: "Not intended for external use",
 	Action: func(ctx *cli.Context) error {
 		log.Printf("enter initCommand")
@@ -150,11 +150,11 @@ var initCommand = cli.Command{
 		if err != nil {
 			return err
 		}
-		
+
 		if err := setUpMountPoints(); err != nil {
-		 	return err
+			return err
 		}
-		
+
 		path, err := exec.LookPath(cmdArray[0])
 		if err != nil {
 			return err
@@ -164,11 +164,28 @@ var initCommand = cli.Command{
 			log.Printf("can't exec: %v", err)
 			return err
 		}
-		
+
 		return nil
 	},
 }
-		
+
+var importCommand = cli.Command{
+	Name: "import",
+	Usage: "import a tarball to create an image",
+	UsageText: "import file image",
+	Action: func(ctx *cli.Context) error {
+		if len(ctx.Args()) != 2 {
+			return fmt.Errorf("missing tarball path and/or image name")
+		}
+		tarballPath := ctx.Args().Get(0)
+		imageName := ctx.Args().Get(1)
+		if _, err := exec.Command("tar", "-xvf", tarballPath, "-C", makeImagePath(imageName)).CombinedOutput(); err != nil {
+			return err
+		}
+		return nil
+	},
+}
+
 func makeContainerId() string {
 	const alphanum = "0123456789abcdefghijklmnopqrstuvwxyz"
 	const alphanumLen = len(alphanum)
@@ -182,7 +199,7 @@ func makeContainerId() string {
 
 const (
 	ContainersDir string = "/var/run/mydocker/containers"
-	ImageDir string = "/var/run/mydocker/images"
+	ImageDir      string = "/var/run/mydocker/images"
 )
 
 func makeContainerDir(containerName string) string {
@@ -243,15 +260,15 @@ func createContainerWorkspace(opts RunOptions) error {
 	if err := os.MkdirAll(workDir, 0777); err != nil {
 		return err
 	}
-	
-	if err := syscall.Mount("overlay", mergedDir, "overlay", 0, fmt.Sprintf("lowerdir=%s,upperdir=%s,workdir=%s", imagePath, upperDir, workDir)); err != nil {
+
+	if err := syscall.Mount("overlay", mergedDir, "overlay", 0,
+		fmt.Sprintf("lowerdir=%s,upperdir=%s,workdir=%s", imagePath, upperDir, workDir)); err != nil {
 		return err
 	}
 	return nil
 }
 
 func cleanContainerWorkspace(opts RunOptions) error {
-	log.Printf("start to clean container workspace")
 	if err := syscall.Unmount(makeContainerMergedDir(opts.containerName), syscall.MNT_DETACH); err != nil {
 		return err
 	}
@@ -274,7 +291,7 @@ func setUpMountPoints() error {
 	if err := pivotRoot(cwd); err != nil {
 		return err
 	}
-	if err := syscall.Mount("proc", "/proc", "proc", syscall.MS_NOEXEC | syscall.MS_NOSUID | syscall.MS_NODEV, ""); err != nil {
+	if err := syscall.Mount("proc", "/proc", "proc", syscall.MS_NOEXEC|syscall.MS_NOSUID|syscall.MS_NODEV, ""); err != nil {
 		log.Printf("can't mount proc: %v", err)
 		return err
 	}

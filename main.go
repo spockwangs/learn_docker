@@ -2,8 +2,8 @@ package main
 
 import (
 	"github.com/urfave/cli"
-	"os"
 	"log"
+	"os"
 )
 
 func main() {
@@ -13,6 +13,7 @@ func main() {
 	app.Commands = []cli.Command{
 		initCommand,
 		runCommand,
+		importCommand,
 	}
 
 	if err := app.Run(os.Args); err != nil {

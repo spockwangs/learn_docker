@@ -1,12 +1,12 @@
 package main
 
 import (
-	"os"
 	"bufio"
-	"path"
-	"strings"
 	"io/ioutil"
+	"os"
+	"path"
 	"strconv"
+	"strings"
 )
 
 type Cgroup struct {
@@ -14,12 +14,12 @@ type Cgroup struct {
 }
 
 type SubsystemConfig struct {
-	cpuShare int
-	memory string
+	cpuShare  int
+	memory    string
 	cpuPeriod int
-	cpuQuota int
-	cpuSet string
-	cpus float64
+	cpuQuota  int
+	cpuSet    string
+	cpus      float64
 }
 
 func NewCgroup(id string) *Cgroup {
@@ -94,7 +94,7 @@ func Apply(sys Subsystem, id string, pid int) error {
 	if _, err := os.Stat(cgroupPath); err != nil {
 		return nil
 	}
-	
+
 	if err := ioutil.WriteFile(path.Join(cgroupPath, "cgroup.procs"), []byte(strconv.Itoa(pid)), 0644); err != nil {
 		return err
 	}
@@ -136,7 +136,7 @@ func (c *CpuSubsystem) Set(id string, config SubsystemConfig) error {
 		config.cpuPeriod = 1000000
 		config.cpuQuota = int(config.cpus * float64(config.cpuPeriod))
 	}
-	
+
 	cgroupPath, err := GetCgroupPath(c.Name(), id)
 	if err != nil {
 		return err
@@ -154,13 +154,13 @@ func (c *CpuSubsystem) Set(id string, config SubsystemConfig) error {
 		if err := ioutil.WriteFile(path.Join(cgroupPath, "cpu.cfs_period_us"), []byte(strconv.Itoa(config.cpuPeriod)), 0644); err != nil {
 			return err
 		}
-	}		
+	}
 	if config.cpuQuota != 0 {
 		if err := ioutil.WriteFile(path.Join(cgroupPath, "cpu.cfs_quota_us"), []byte(strconv.Itoa(config.cpuQuota)), 0644); err != nil {
 			return err
 		}
-	}		
-		
+	}
+
 	return nil
 }
 
@@ -170,7 +170,6 @@ type CpusetSubsystem struct {
 func (c *CpusetSubsystem) Name() string {
 	return "cpuset"
 }
-
 
 func (c *CpusetSubsystem) Set(id string, config SubsystemConfig) error {
 	if config.cpuSet == "" {
