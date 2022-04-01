@@ -120,7 +120,9 @@ var runCommand = cli.Command{
 		if err := cgroup.Set(subsystemConfig); err != nil {
 			return err
 		}
-		cgroup.Apply(cmd.Process.Pid)
+		if err := cgroup.Apply(cmd.Process.Pid); err != nil {
+			return err
+		}
 		defer cgroup.Destroy()
 		
 		log.Printf("sending command: %v", runOpts.command)
