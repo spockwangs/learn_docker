@@ -203,14 +203,14 @@ var commitCommand = cli.Command{
 		containerName := ctx.Args().Get(0)
 		imageName := ctx.Args().Get(1)
 		containerPath := makeContainerMergedDir(containerName)
-		if err := os.Stat(containerPath); err != nil {
+		if _, err := os.Stat(containerPath); err != nil {
 			if os.IsNotExist(err) {
 				return fmt.Errorf("the container `%v` does not exist", containerName)
 			}
 			return err
 		}
 		imagePath := makeImagePath(imageName)
-		if err := os.Stat(imagePath); err == nil {
+		if _, err := os.Stat(imagePath); err == nil {
 			return fmt.Errorf("the image `%v` already exits; please change a name", imageName)
 		}
 		if err := os.MkdirAll(imagePath, 0755); err != nil {
