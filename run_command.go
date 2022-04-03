@@ -61,6 +61,10 @@ var runCommand = cli.Command{
 			Name: "v",
 			Usage: "mount volumes",
 		},
+		cli.StringFlag{
+			Name: "network",
+			Usage: "specify which network to connect to; `host` means connecting to host network",
+		},
 	},
 	Action: func(ctx *cli.Context) error {
 		if len(ctx.Args()) < 2 {
@@ -103,8 +107,12 @@ var runCommand = cli.Command{
 			return err
 		}
 		cmd := exec.Command(initCmd, "init")
+		cloneFlags := syscall.CLONE_NEWPID | syscall.CLONE_NEWNS | syscall.CLONE_NEWIPC | syscall.CLONE_NEWUTS
+		if ctx.String("network") != "" && ctx.String("network") != "host" {
+			cloneFlags = cloneFlags | syscall.CLONE_NEWNET
+		}
 		cmd.SysProcAttr = &syscall.SysProcAttr{
-			Cloneflags:   syscall.CLONE_NEWUTS | syscall.CLONE_NEWPID | syscall.CLONE_NEWNS | syscall.CLONE_NEWNET | syscall.CLONE_NEWIPC,
+			Cloneflags:   cloneFlags,
 			Unshareflags: syscall.CLONE_NEWNS,
 		}
 		if runOpts.createTty {
@@ -152,13 +160,9 @@ var runCommand = cli.Command{
 }
 
 func createContainerWorkspace(opts RunOptions) error {
-	// Extract the image.
 	imagePath := makeImagePath(opts.imageName)
 	_, err := os.Stat(imagePath)
 	if err != nil {
-		return err
-	}
-	if _, err := exec.Command("tar", "-xvf", fmt.Sprintf("%s.tar", imagePath), "-C", imagePath).CombinedOutput(); err != nil {
 		return err
 	}
 
