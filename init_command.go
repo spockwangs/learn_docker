@@ -68,7 +68,7 @@ func setUpMountPoints() error {
 		log.Printf("can't mount proc: %v", err)
 		return err
 	}
-	if err := syscall.Mount("tmpfs", "/dev", "tmpfs", syscall.MS_NOSUID|syscall.MS_STRICTATIME, "mode=755"); err != nil {
+	if err := syscall.Mount("devtmpfs", "/dev", "devtmpfs", syscall.MS_NOSUID|syscall.MS_STRICTATIME, "mode=755"); err != nil {
 		log.Printf("can't mount tmpfs: %v", err)
 		return err
 	}
