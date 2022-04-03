@@ -189,3 +189,29 @@ func (c *CpusetSubsystem) Set(id string, config SubsystemConfig) error {
 	}
 	return nil
 }
+
+type MemorySubsystem struct {
+}
+
+func (m *MemorySubsystem) Name() string {
+	return "memory"
+}
+
+func (m *MemorySubsystem) Set(id string, config SubsystemConfig) error {
+	if config.memory == "" {
+		return nil
+	}
+
+	cgroupPath, err := GetCgroupPath(m.Name(), id)
+	if err != nil {
+		return err
+	}
+	if err := os.MkdirAll(cgroupPath, 0755); err != nil {
+		return err
+	}
+
+	if err := ioutil.WriteFile(path.Join(cgroupPath, "memory.limit_in_bytes"), []byte(config.memory), 0644); err != nil {
+		return err
+	}
+	return nil
+}
