@@ -5,6 +5,10 @@ import (
 	"os/exec"
 	"github.com/urfave/cli"
 	"syscall"
+    "os"
+    "io/ioutil"
+    "strings"
+    "fmt"
 )
 
 var initCommand = cli.Command{

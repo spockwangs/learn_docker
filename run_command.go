@@ -3,14 +3,11 @@ package main
 import (
 	"fmt"
 	"github.com/urfave/cli"
-	"io/ioutil"
 	"log"
-	"math/rand"
 	"os"
 	"os/exec"
 	"strings"
 	"syscall"
-	"time"
 	"path"
 )
 

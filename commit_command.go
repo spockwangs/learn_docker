@@ -4,6 +4,7 @@ import (
 	"github.com/urfave/cli"
 	"fmt"
 	"os"
+    "os/exec"
 )
 
 var commitCommand = cli.Command{

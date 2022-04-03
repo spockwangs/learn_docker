@@ -2,6 +2,8 @@ package main
 
 import (
 	"math/rand"
+    "time"
+    "fmt"
 )
 
 func makeContainerId() string {

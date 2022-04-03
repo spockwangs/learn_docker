@@ -2,6 +2,9 @@ package main
 
 import (
 	"github.com/urfave/cli"
+    "fmt"
+    "os"
+    "os/exec"
 )
 
 var importCommand = cli.Command{
