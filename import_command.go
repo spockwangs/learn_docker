@@ -1,5 +1,9 @@
 package main
 
+import (
+	"github.com/urfave/cli"
+)
+
 var importCommand = cli.Command{
 	Name: "import",
 	Usage: "import a tarball to create an image",

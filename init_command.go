@@ -1,3 +1,12 @@
+package main
+
+import (
+	"log"
+	"os/exec"
+	"github.com/urfave/cli"
+	"syscall"
+)
+
 var initCommand = cli.Command{
 	Name:  "init",
 	Usage: "Not intended for external use",
