@@ -112,7 +112,7 @@ var runCommand = cli.Command{
 			cloneFlags = cloneFlags | syscall.CLONE_NEWNET
 		}
 		cmd.SysProcAttr = &syscall.SysProcAttr{
-			Cloneflags:   cloneFlags,
+			Cloneflags:   uintptr(cloneFlags),
 			Unshareflags: syscall.CLONE_NEWNS,
 		}
 		if runOpts.createTty {
