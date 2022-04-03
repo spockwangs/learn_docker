@@ -83,9 +83,11 @@ var runCommand = cli.Command{
 		if runOpts.containerName == "" {
 			runOpts.containerName = runOpts.containerId
 		}
-		runOpts.volumes = strings.Split(ctx.String("v"), ":")
-		if len(runOpts.volumes) != 2 {
-			return fmt.Errorf("bad volumes")
+		if ctx.String("v") != "" {
+			runOpts.volumes = strings.Split(ctx.String("v"), ":")
+			if len(runOpts.volumes) != 2 {
+				return fmt.Errorf("bad volumes")
+			}
 		}
 
 		subsystemConfig := SubsystemConfig{
