@@ -3,6 +3,9 @@ package main
 import (
 	"github.com/urfave/cli"
 	"net"
+	"fmt"
+	"os"
+	"path/filepath"
 )
 
 var networkCommand = cli.Command{
@@ -16,7 +19,6 @@ var networkCommand = cli.Command{
 			Flags: []cli.Flag{
 				cli.StringFlag{
 					Name: "driver",
-					Aliases: []string{"d"},
 					Usage: "network driver",
 				},
 				cli.StringFlag{
