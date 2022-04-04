@@ -66,7 +66,7 @@ var networkCommand = cli.Command{
 				return nw.Remove()
 			},
 		},
-	}
+	},
 }
 
 func CreateNetwork(driver, subnet, name string) error {
