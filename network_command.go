@@ -35,7 +35,7 @@ var networkCommand = cli.Command{
 		{
 			Name: "list",
 			Usage: "list container network",
-			UsageText: `mydocker network list`
+			UsageText: `mydocker network list`,
 			Action: func(ctx *cli.Context) error {
 				networks, err := ListNetwork()
 				if err != nil {
