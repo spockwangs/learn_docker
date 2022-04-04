@@ -9,6 +9,7 @@ import (
 	"strings"
 	"path"
 	"io/ioutil"
+	"encoding/json"
 )
 
 var networkCommand = cli.Command{
@@ -110,7 +111,7 @@ func ListNetwork() ([]Network, error) {
 
 	var networks []Network
 	err := filepath.Walk(NetworkPath, func(networkPath string, info os.FileInfo, err error) error {
-		if strings.HasSuffix("/") {
+		if strings.HasSuffix(networkPath, "/") {
 			return nil
 		}
 
@@ -119,7 +120,7 @@ func ListNetwork() ([]Network, error) {
 		if err != nil {
 			return err
 		}
-		networks = append(networks, nw)
+		networks = append(networks, *nw)
 	})
 	if err != nil {
 		return nil, err
@@ -171,7 +172,7 @@ func NewNetwork(name string) (*Network, error) {
 
 func (n *Network) Save() error {
 	path := makeNetworkPath(n.Name)
-	file, err := os.OpenFile(path, os.O_TRUNC|os.O_WRONLY|os.CREATE, 0644)
+	file, err := os.OpenFile(path, os.O_TRUNC|os.O_WRONLY|os.O_CREATE, 0644)
 	if err != nil {
 		return err
 	}
