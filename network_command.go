@@ -138,7 +138,7 @@ func DeleteNetwork(networkName string) error {
 	if err != nil {
 		return err
 	}
-	if err := ipAllocator.Release(nw.IpNet); err != nil {
+	if err := ipAllocator.Release(nw.IpNet, nw.IpNet.IP); err != nil {
 		return err
 	}
 	d, err := drivers[nw.Driver]

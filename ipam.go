@@ -91,7 +91,7 @@ func loadSubnets() (subnets SubnetsConfig, err error) {
 
 func storeSubnets(subnets SubnetsConfig) error {
 	dir, _ := path.Split(IpamPath)
-	if err := os.MkdirAll(dir); err != nil {
+	if err := os.MkdirAll(dir, 0755); err != nil {
 		return err
 	}
 
