@@ -5,6 +5,8 @@ import (
 	"net"
 	"io/ioutil"
 	"encoding/json"
+	"strings"
+	"os"
 )
 
 type IPAM struct{
@@ -27,7 +29,7 @@ func (ipam *IPAM) Allocate(subnet *net.IPNet) (ip net.IP, err error) {
 		subnets[subnet.String()] = strings.Repeat("0", 1 << uint8(size - one))
 	}
 
-	for c := range((*ipam.Subnets)[subnet.String()]) {
+	for c := range(subnets[subnet.String()]) {
 		if subnets[subnet.String()][c] == '0' {
 			ipalloc := []byte(subnets[subnet.String()])
 			ipalloc[c] = '1'
@@ -40,6 +42,7 @@ func (ipam *IPAM) Allocate(subnet *net.IPNet) (ip net.IP, err error) {
 			break
 		}
 	}
+	return
 }
 
 func (ipam *IPAM) Release(subnet *net.IPNet, ip *net.IP) error {
@@ -83,6 +86,7 @@ func loadSubnets() (subnets SubnetsConfig, err error) {
 		return
 	}
 	err = json.Unmarshal(jsonStr, subnets)
+	return
 }
 
 func storeSubnets(subnets SubnetsConfig) error {
