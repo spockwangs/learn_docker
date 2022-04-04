@@ -6,6 +6,9 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
+	"path"
+	"io/ioutil"
 )
 
 var networkCommand = cli.Command{
@@ -91,6 +94,7 @@ func CreateNetwork(driver, subnet, name string) error {
 	if err := network.Save(); err != nil {
 		return err
 	}
+	return nil
 }
 
 func ListNetwork() ([]Network, error) {
