@@ -10,6 +10,7 @@ import (
 	"path"
 	"io/ioutil"
 	"encoding/json"
+	"text/tabwriter"
 )
 
 var networkCommand = cli.Command{
@@ -68,7 +69,10 @@ var networkCommand = cli.Command{
 					return fmt.Errorf("missing network name")
 				}
 				networkName := ctx.Args().Get(0)
-				nw := NewNetwork(networkName)
+				nw, err := NewNetwork(networkName)
+				if err != nil {
+					return err
+				}
 				return nw.Remove()
 			},
 		},
@@ -121,6 +125,7 @@ func ListNetwork() ([]Network, error) {
 			return err
 		}
 		networks = append(networks, *nw)
+		return nil
 	})
 	if err != nil {
 		return nil, err
@@ -136,7 +141,7 @@ func DeleteNetwork(networkName string) error {
 	if err := ipAllocator.Release(nw.IpNet); err != nil {
 		return err
 	}
-	d, err := drivers[nw.driver]
+	d, err := drivers[nw.Driver]
 	if err != nil {
 		return err
 	}
