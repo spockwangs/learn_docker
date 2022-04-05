@@ -15,6 +15,7 @@ func main() {
 		runCommand,
 		importCommand,
 		commitCommand,
+		networkCommand,
 	}
 
 	if err := app.Run(os.Args); err != nil {
