@@ -206,7 +206,7 @@ func (n *Network) Remove() error {
 	return os.RemoveAll(networkPath)
 }
 
-const NetworkPath = "/var/run/mydocker/networks"
+const NetworkPath = "/var/run/mydocker/networks/"
 
 func makeNetworkPath(name string) string {
 	return path.Join(NetworkPath, name)
