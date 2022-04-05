@@ -211,5 +211,5 @@ type NetworkDriver interface {
 }
 
 var drivers := map[string]NetworkDriver{
-	&Bridge{}
+	"bridge": &Bridge{},
 }
