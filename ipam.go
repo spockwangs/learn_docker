@@ -42,6 +42,8 @@ func (ipam *IPAM) Allocate(subnet *net.IPNet) (ip net.IP, err error) {
 			break
 		}
 	}
+	
+	err = storeSubnets(subnets)
 	return
 }
 
