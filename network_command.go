@@ -12,6 +12,8 @@ import (
 	"encoding/json"
 	"text/tabwriter"
 	"github.com/vishvananda/netlink"
+	"github.com/vishvananda/netns"
+	"runtime"
 )
 
 var networkCommand = cli.Command{
@@ -217,6 +219,7 @@ type Endpoint struct {
 	id string
 	device netlink.Veth
 	ip net.IP
+	network Network
 }
 
 var drivers = map[string]NetworkDriver{
@@ -239,16 +242,16 @@ func Connect(networkName string, container *Container) error {
 		return err
 	}
 	ep := &Endpoint{
-		id: fmt.Sprintf("%s-%s", container.Id, networkName),
+		id: fmt.Sprintf("%s-%s", container.id, networkName),
 		ip: ip,
 		network: network,
 	}
-	if err = drivers[network.Driver].Connect(network, ep); err != nil {
+	if err = drivers[network.Driver].Connect(*network, ep); err != nil {
 		return err
 	}
 
 	// Move one endpoint to the container's network namespace.
-	peerLink, err := netlink.LinkByName(ep.device.peerName)
+	peerLink, err := netlink.LinkByName(ep.device.PeerName)
 	if err != nil {
 		return err
 	}
@@ -270,10 +273,10 @@ func Connect(networkName string, container *Container) error {
 
 	ifaceIp := ep.network.ipNet
 	ifaceIp.IP = ep.ip
-	if err = setInterfaceIp(ep.Device.peerName, ifaceIp); err != nil {
+	if err = setInterfaceIp(ep.device.peerName, ifaceIp); err != nil {
 		return err
 	}
-	if err = setInterfaceUp(ep.Device.peerName); err != nil {
+	if err = setInterfaceUp(ep.device.peerName); err != nil {
 		return err
 	}
 	if err = setInterfaceUp("lo"); err != nil {
