@@ -271,7 +271,7 @@ func Connect(networkName string, container Container) error {
 		return err
 	}
 
-	ifaceIp := ep.network.IpNet
+	ifaceIp := *ep.network.IpNet
 	ifaceIp.IP = ep.ip
 	if err = setInterfaceIp(ep.device.PeerName, ifaceIp); err != nil {
 		return err
@@ -305,7 +305,7 @@ func setInterfaceIp(linkName string, ipNet net.IPNet) error {
 		return err
 	}
 	addr := &netlink.Addr{IPNet: &ipNet, Peer: &ipNet, Label: "", Flags: 0, Scope: 0, Broadcast: nil}
-	return netlink.AddrAdd(linkName, addr)
+	return netlink.AddrAdd(link, addr)
 }
 
 func setInterfaceUp(linkName string) error {
