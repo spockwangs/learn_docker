@@ -208,6 +208,12 @@ type NetworkDriver interface {
 	Name() string
 	Create(subnet string, name string) (*Network, error)
 	Delete(network Network) error
+	Connect(network Network, endpoint Endpoint) error
+}
+
+type Endpoint struct {
+	ID string
+	Device netlink.Veth
 }
 
 var drivers = map[string]NetworkDriver{
