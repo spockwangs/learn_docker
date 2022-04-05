@@ -5,6 +5,7 @@ import (
 	"strings"
 	"netlink"
 	"fmt"
+	"github.com/vishvananda/netlink"
 )
 
 type Bridge struct{
