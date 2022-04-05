@@ -210,14 +210,104 @@ type NetworkDriver interface {
 	Name() string
 	Create(subnet string, name string) (*Network, error)
 	Delete(network Network) error
-	Connect(network Network, endpoint Endpoint) error
+	Connect(network Network, endpoint *Endpoint) error
 }
 
 type Endpoint struct {
-	ID string
-	Device netlink.Veth
+	id string
+	device netlink.Veth
 }
 
 var drivers = map[string]NetworkDriver{
 	"bridge": &Bridge{},
+}
+
+type Container struct {
+	id string
+	pid int
+}
+
+func Connect(networkName string, container *Container) error {
+	// Create a pair of endpoints with the network.
+	network, err := NewNetwork(networkName)
+	if err != nil {
+		return err
+	}
+	ip, err := ipAllocator.Allocate(network.IpNet)
+	if err != nil {
+		return err
+	}
+	ep := &Endpoint{
+		ID: fmt.Sprintf("%s-%s", container.Id, networkName),
+		IpAddress: ip,
+		Network: network,
+	}
+	if err = drivers[network.Driver].Connect(network, ep); err != nil {
+		return err
+	}
+
+	// Move one endpoint to the container's network namespace.
+	peerLink, err := netlink.LinkByName(ep.Device.PeerName)
+	if err != nil {
+		return err
+	}
+	netFile, err := os.OpenFile(fmt.Sprintf("/proc/%s/ns/net", container.pid), os.O_RDONLY, 0)
+	if err != nil {
+		return err
+	}
+	runtime.LockOSThread()
+	if err = netlink.LinkSetNsFd(peerLink, int(netFile.Fd())); err != nil {
+		return err
+	}
+	oldNetNs, err := netns.Get()
+	if err != nil {
+		return err
+	}
+	if err = netns.Set(netns.NsHandle(netFile.Fd())); err != nil {
+		return err
+	}
+
+	ifaceIp := ep.Network.ipNet
+	ifaceIp.IP = ep.IpAddress
+	if err = setInterfaceIp(ep.Device.peerName, ifaceIp); err != nil {
+		return err
+	}
+	if err = setInterfaceUp(ep.Device.peerName); err != nil {
+		return err
+	}
+	if err = setInterfaceUp("lo"); err != nil {
+		return err
+	}
+	_, ipNet, _ := net.ParseCIDR("0.0.0.0/0")
+	defaultRoute := &netlink.Route{
+		LinkIndex: peerLink.Attrs().Index,
+		Gw: ep.Network.IpNet.IP,
+		Dst: ipNet,
+	}
+	if err = netlink.RouteAdd(defaultRoute); err != nil {
+		return err
+	}
+	netns.Set(oldNetNs)
+	oldNetNs.Close()
+	runtime.UnlockOSThread()
+	netFile.Close()
+
+	return nil
+}
+
+func setInterfaceIp(linkName string, ipNet net.IPNet) error {
+	link, err := netlink.LinkByName(linkName)
+	if err != nil {
+		return err
+	}
+	addr := &netlink.Addr{IPNet: ipNet, Peer: ipNet, Label: "", Flags: 0, Scope: 0, Broadcast: nil}
+	return netlink.AddrAdd(linkName, addr)
+}
+
+func setInterfaceUp(linkName string) error {
+	link, err := netlink.LinkByName(linkName)
+	if err != nil {
+		return err
+	}
+	return netlink.LinkSetUp(link)
 }

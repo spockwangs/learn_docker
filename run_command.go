@@ -144,6 +144,16 @@ var runCommand = cli.Command{
 		}
 		defer cgroup.Destroy()
 
+		if ctx.String("network") != "" && ctx.String("network") != "host" {
+			container := Container{
+				id: runOpts.containerId,
+				pid: cmd.Process.Pid,
+			}
+			if err := Connect(ctx.String("network"), container); err != nil {
+				return err
+			}
+		}
+
 		log.Printf("sending command: %v", runOpts.command)
 		writePipe.WriteString(runOpts.command)
 		writePipe.Close()

@@ -66,7 +66,7 @@ func (b *Bridge) Delete(network Network) error {
 	return netlink.LinkDel(bridge)
 }
 
-func (b *Bridge) Connect(network Network, endpoint Endpoint) error {
+func (b *Bridge) Connect(network Network, endpoint *Endpoint) error {
 	bridge, err := netlink.LinkByName(network.Name)
 	if err != nil {
 		return err
