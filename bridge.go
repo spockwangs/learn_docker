@@ -20,7 +20,7 @@ func (b *Bridge) Create(subnet, name string) (*Network, error) {
 	nw := &Network{
 		Name: name,
 		IpNet: IpNet,
-		Driver: b.Name()
+		Driver: b.Name(),
 	}
 
 	// Check if the bridge already exists?
