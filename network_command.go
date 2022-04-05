@@ -89,6 +89,7 @@ func CreateNetwork(driver, subnet, name string) error {
 	if err != nil {
 		return err
 	}
+	ipNet.IP = ip
 	d, exist := drivers[driver]
 	if !exist {
 		return fmt.Errorf("the driver `%v` does not exist", driver)
