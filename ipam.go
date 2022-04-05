@@ -69,6 +69,7 @@ func (ipam *IPAM) Release(subnet *net.IPNet, ip *net.IP) error {
 type SubnetsConfig = map[string]string
 
 func loadSubnets() (subnets SubnetsConfig, err error) {
+	subnets = make(SubnetsConfig)
 	if _, err = os.Stat(IpamPath); err != nil {
 		if os.IsNotExist(err) {
 			err = nil
