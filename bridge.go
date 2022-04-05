@@ -3,7 +3,6 @@ package main
 import (
 	"net"
 	"strings"
-	"netlink"
 	"fmt"
 	"github.com/vishvananda/netlink"
 )
