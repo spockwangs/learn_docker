@@ -216,6 +216,7 @@ type NetworkDriver interface {
 type Endpoint struct {
 	id string
 	device netlink.Veth
+	ip net.IP
 }
 
 var drivers = map[string]NetworkDriver{
@@ -238,16 +239,16 @@ func Connect(networkName string, container *Container) error {
 		return err
 	}
 	ep := &Endpoint{
-		ID: fmt.Sprintf("%s-%s", container.Id, networkName),
-		IpAddress: ip,
-		Network: network,
+		id: fmt.Sprintf("%s-%s", container.Id, networkName),
+		ip: ip,
+		network: network,
 	}
 	if err = drivers[network.Driver].Connect(network, ep); err != nil {
 		return err
 	}
 
 	// Move one endpoint to the container's network namespace.
-	peerLink, err := netlink.LinkByName(ep.Device.PeerName)
+	peerLink, err := netlink.LinkByName(ep.device.peerName)
 	if err != nil {
 		return err
 	}
@@ -267,8 +268,8 @@ func Connect(networkName string, container *Container) error {
 		return err
 	}
 
-	ifaceIp := ep.Network.ipNet
-	ifaceIp.IP = ep.IpAddress
+	ifaceIp := ep.network.ipNet
+	ifaceIp.IP = ep.ip
 	if err = setInterfaceIp(ep.Device.peerName, ifaceIp); err != nil {
 		return err
 	}

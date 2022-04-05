@@ -73,18 +73,18 @@ func (b *Bridge) Connect(network Network, endpoint *Endpoint) error {
 	}
 
 	linkAttr := netlink.NewLinkAttrs()
-	linkAttr.Name = endpoint.ID[:5]
+	linkAttr.Name = endpoint.id[:5]
 	linkAttr.MasterIndex = bridge.Attrs().Index
 
-	endpoint.Device = netlink.Veth{
+	endpoint.device = netlink.Veth{
 		LinkAttrs: linkAttr,
-		PeerName: "cif-" + endpoint.ID[:5],
+		PeerName: "cif-" + endpoint.id[:5],
 	}
 
-	if err = netlink.LinkAdd(&endpoint.Device); err != nil {
+	if err = netlink.LinkAdd(&endpoint.device); err != nil {
 		return err
 	}
-	if err = netlink.LinkSetUp(&endpoint.Device); err != nil {
+	if err = netlink.LinkSetUp(&endpoint.device); err != nil {
 		return err
 	}
 	return nil
