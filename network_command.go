@@ -11,6 +11,7 @@ import (
 	"io/ioutil"
 	"encoding/json"
 	"text/tabwriter"
+	"github.com/vishvananda/netlink"
 )
 
 var networkCommand = cli.Command{
