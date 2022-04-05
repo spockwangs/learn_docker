@@ -88,7 +88,7 @@ func loadSubnets() (subnets SubnetsConfig, err error) {
 	if err != nil {
 		return
 	}
-	err = json.Unmarshal(jsonStr, subnets)
+	err = json.Unmarshal(jsonStr, &subnets)
 	return
 }
 
