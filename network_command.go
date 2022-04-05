@@ -259,7 +259,7 @@ func Connect(networkName string, container Container) error {
 	if err != nil {
 		return err
 	}
-	netFile, err := os.OpenFile(fmt.Sprintf("/proc/%s/ns/net", container.pid), os.O_RDONLY, 0)
+	netFile, err := os.OpenFile(fmt.Sprintf("/proc/%d/ns/net", container.pid), os.O_RDONLY, 0)
 	if err != nil {
 		return err
 	}
