@@ -210,3 +210,6 @@ type NetworkDriver interface {
 	Delete(network Network) error
 }
 
+var drivers := map[string]NetworkDriver{
+	&Bridge{}
+}
