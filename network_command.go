@@ -231,7 +231,7 @@ type Container struct {
 	pid int
 }
 
-func Connect(networkName string, container *Container) error {
+func Connect(networkName string, container Container) error {
 	// Create a pair of endpoints with the network.
 	network, err := NewNetwork(networkName)
 	if err != nil {
@@ -244,7 +244,7 @@ func Connect(networkName string, container *Container) error {
 	ep := &Endpoint{
 		id: fmt.Sprintf("%s-%s", container.id, networkName),
 		ip: ip,
-		network: network,
+		network: *network,
 	}
 	if err = drivers[network.Driver].Connect(*network, ep); err != nil {
 		return err
@@ -271,12 +271,12 @@ func Connect(networkName string, container *Container) error {
 		return err
 	}
 
-	ifaceIp := ep.network.ipNet
+	ifaceIp := ep.network.IpNet
 	ifaceIp.IP = ep.ip
-	if err = setInterfaceIp(ep.device.peerName, ifaceIp); err != nil {
+	if err = setInterfaceIp(ep.device.PeerName, ifaceIp); err != nil {
 		return err
 	}
-	if err = setInterfaceUp(ep.device.peerName); err != nil {
+	if err = setInterfaceUp(ep.device.PeerName); err != nil {
 		return err
 	}
 	if err = setInterfaceUp("lo"); err != nil {
@@ -285,7 +285,7 @@ func Connect(networkName string, container *Container) error {
 	_, ipNet, _ := net.ParseCIDR("0.0.0.0/0")
 	defaultRoute := &netlink.Route{
 		LinkIndex: peerLink.Attrs().Index,
-		Gw: ep.Network.IpNet.IP,
+		Gw: ep.network.IpNet.IP,
 		Dst: ipNet,
 	}
 	if err = netlink.RouteAdd(defaultRoute); err != nil {
@@ -304,7 +304,7 @@ func setInterfaceIp(linkName string, ipNet net.IPNet) error {
 	if err != nil {
 		return err
 	}
-	addr := &netlink.Addr{IPNet: ipNet, Peer: ipNet, Label: "", Flags: 0, Scope: 0, Broadcast: nil}
+	addr := &netlink.Addr{IPNet: &ipNet, Peer: &ipNet, Label: "", Flags: 0, Scope: 0, Broadcast: nil}
 	return netlink.AddrAdd(linkName, addr)
 }
 
