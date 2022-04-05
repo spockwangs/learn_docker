@@ -180,12 +180,12 @@ func NewNetwork(name string) (*Network, error) {
 }
 
 func (n *Network) Save() error {
-	path := makeNetworkPath(n.Name)
-	dir, _ := path.Split(path)
+	networkPath := makeNetworkPath(n.Name)
+	dir, _ := path.Split(networkPath)
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		return err
 	}
-	file, err := os.OpenFile(path, os.O_TRUNC|os.O_WRONLY|os.O_CREATE, 0644)
+	file, err := os.OpenFile(networkPath, os.O_TRUNC|os.O_WRONLY|os.O_CREATE, 0644)
 	if err != nil {
 		return err
 	}
