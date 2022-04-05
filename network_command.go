@@ -88,11 +88,11 @@ func CreateNetwork(driver, subnet, name string) error {
 	if err != nil {
 		return err
 	}
-	d, err := drivers[driver]
-	if err != nil {
+	d, exist := drivers[driver]
+	if !exist {
 		return fmt.Errorf("the driver `%v` does not exist", driver)
 	}
-	network, err := d.Create(ipNet, name)
+	network, err := d.Create(ipNet.String(), name)
 	if err != nil {
 		return err
 	}
@@ -141,11 +141,11 @@ func DeleteNetwork(networkName string) error {
 	if err := ipAllocator.Release(nw.IpNet, &nw.IpNet.IP); err != nil {
 		return err
 	}
-	d, err := drivers[nw.Driver]
-	if err != nil {
-		return err
+	d, exist := drivers[nw.Driver]
+	if !exist {
+		return fmt.Errorf("the driver `%v` does not exist", nw.Driver)
 	}
-	if err := d.Delete(nw); err != nil {
+	if err := d.Delete(*nw); err != nil {
 		return err
 	}
 	return nw.Remove()

@@ -5,6 +5,7 @@ import (
 	"strings"
 	"fmt"
 	"github.com/vishvananda/netlink"
+	"os/exec"
 )
 
 type Bridge struct{
@@ -52,7 +53,7 @@ func (b *Bridge) Create(subnet, name string) (*Network, error) {
 
 	cmd := exec.Command("iptables", "-t", "nat", "-A", "POSTROUTING", "-s", ipNet.String(), "!", "-o", nw.Name, "-j", "MASQUERADE")
 	if output, err := cmd.Output(); err != nil {
-		return fmt.Errorf("iptables failed: output=%v, err=%w", output, err)
+		return nil, fmt.Errorf("iptables failed: output=%v, err=%w", output, err)
 	}
 	return nw, nil
 }
