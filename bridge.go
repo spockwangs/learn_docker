@@ -2,6 +2,9 @@ package main
 
 import (
 	"net"
+	"strings"
+	"netlink"
+	"fmt"
 )
 
 type Bridge struct{
@@ -19,7 +22,7 @@ func (b *Bridge) Create(subnet, name string) (*Network, error) {
 	ipNet.IP = ip
 	nw := &Network{
 		Name: name,
-		IpNet: IpNet,
+		IpNet: ipNet,
 		Driver: b.Name(),
 	}
 
