@@ -55,6 +55,16 @@ func (b *Bridge) Create(subnet, name string) (*Network, error) {
 	if output, err := cmd.Output(); err != nil {
 		return nil, fmt.Errorf("iptables failed: output=%v, err=%w", output, err)
 	}
+
+	// Enable forwarding.
+	cmd = exec.Command("iptables", "-t", "filter", "-A", "FORWARD", "-i", nw.Name, "!", "-o", nw.Name, "-j", "ACCEPT")
+	if output, err := cmd.Output(); err != nil {
+		return nil, fmt.Errorf("iptables failed: output=%v, err=%w", output, err)
+	}
+	cmd = exec.Command("iptables", "-t", "filter", "-A", "FORWARD", "-o", nw.Name, "-j", "ACCEPT")
+	if output, err := cmd.Output(); err != nil {
+		return nil, fmt.Errorf("iptables failed: output=%v, err=%w", output, err)
+	}
 	return nw, nil
 }
 	
