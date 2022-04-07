@@ -73,7 +73,23 @@ func (b *BridgeDriver) Delete(network Network) error {
 	if err != nil {
 		return err
 	}
-	return netlink.LinkDel(bridge)
+	if err := netlink.LinkDel(bridge); err != nil {
+		return err
+	}
+
+	cmd := exec.Command("iptables", "-t", "nat", "-D", "POSTROUTING", "-s", network.IpNet.String(), "!", "-o", network.Name, "-j", "MASQUERADE")
+	if output, err := cmd.Output(); err != nil {
+		return fmt.Errorf("iptables failed: output=%v, err=%w", output, err)
+	}
+	cmd = exec.Command("iptables", "-t", "filter", "-D", "FORWARD", "-i", network.Name, "!", "-o", network.Name, "-j", "ACCEPT")
+	if output, err := cmd.Output(); err != nil {
+		return fmt.Errorf("iptables failed: output=%v, err=%w", output, err)
+	}
+	cmd = exec.Command("iptables", "-t", "filter", "-D", "FORWARD", "-o", network.Name, "-j", "ACCEPT")
+	if output, err := cmd.Output(); err != nil {
+		return fmt.Errorf("iptables failed: output=%v, err=%w", output, err)
+	}
+	return nil
 }
 
 func (b *BridgeDriver) Connect(network Network, container *Container) error {

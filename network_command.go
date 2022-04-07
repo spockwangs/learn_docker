@@ -72,11 +72,7 @@ var networkCommand = cli.Command{
 					return fmt.Errorf("missing network name")
 				}
 				networkName := ctx.Args().Get(0)
-				nw, err := NewNetwork(networkName)
-				if err != nil {
-					return err
-				}
-				return nw.Remove()
+				return DeleteNetwork(networkName)
 			},
 		},
 	},
