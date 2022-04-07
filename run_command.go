@@ -70,7 +70,7 @@ var runCommand = cli.Command{
 			Usage: "mount volumes",
 		},
 		cli.StringFlag{
-			Name: "network",
+			Name: "net",
 			Usage: "specify which network to connect to; `host` means connecting to host network",
 		},
 	},
@@ -156,7 +156,7 @@ var runCommand = cli.Command{
 			id: runOpts.containerId,
 			pid: cmd.Process.Pid,
 		}
-		network := ctx.String("network")
+		network := ctx.String("net")
 		var need_net = false
 		if network != "" && network != "host" {
 			need_net = true
