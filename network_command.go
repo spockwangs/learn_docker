@@ -245,6 +245,12 @@ func Connect(networkName string, container *Container) error {
 	if err != nil {
 		return err
 	}
+	defer func() {
+		if (err != nil) {
+			ipAllocator.Release(network.IpNet, ip)
+		}
+	}()
+	
 	container.ip = ip
 	if err = drivers[network.Driver].Connect(*network, container); err != nil {
 		return err
@@ -259,7 +265,9 @@ func Connect(networkName string, container *Container) error {
 	if err != nil {
 		return err
 	}
+	defer netFile.Close()
 	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
 	if err = netlink.LinkSetNsFd(peerLink, int(netFile.Fd())); err != nil {
 		return err
 	}
@@ -267,9 +275,11 @@ func Connect(networkName string, container *Container) error {
 	if err != nil {
 		return err
 	}
+	defer oldNetNs.Close()
 	if err = netns.Set(netns.NsHandle(netFile.Fd())); err != nil {
 		return err
 	}
+	defer netns.Set(oldNetNs)
 
 	ifaceIp := *network.IpNet
 	ifaceIp.IP = container.ip
@@ -291,10 +301,6 @@ func Connect(networkName string, container *Container) error {
 	if err = netlink.RouteAdd(defaultRoute); err != nil {
 		return err
 	}
-	netns.Set(oldNetNs)
-	oldNetNs.Close()
-	runtime.UnlockOSThread()
-	netFile.Close()
 
 	return nil
 }
