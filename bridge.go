@@ -113,3 +113,7 @@ func (b *BridgeDriver) Disconnect(container Container) error {
 	}
 	return nil
 }
+
+func makeVethName(containerId string) string {
+	return fmt.Sprintf("veth%s", containerId[0:5])
+}

@@ -330,6 +330,3 @@ func setInterfaceUp(linkName string) error {
 	return netlink.LinkSetUp(link)
 }
 
-func makeVethName(containerId string) string {
-	return fmt.Sprintf("veth%s", containerId[0:5])
-}
