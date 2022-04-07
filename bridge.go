@@ -8,14 +8,14 @@ import (
 	"os/exec"
 )
 
-type Bridge struct{
+type BridgeDriver struct{
 }
 
-func (b *Bridge) Name() string {
+func (b *BridgeDriver) Name() string {
 	return "bridge"
 }
 
-func (b *Bridge) Create(subnet, name string) (*Network, error) {
+func (b *BridgeDriver) Create(subnet, name string) (*Network, error) {
 	ip, ipNet, err := net.ParseCIDR(subnet)
 	if err != nil {
 		return nil, err
@@ -30,7 +30,7 @@ func (b *Bridge) Create(subnet, name string) (*Network, error) {
 	// Check if the bridge already exists?
 	_, err = net.InterfaceByName(nw.Name)
 	if err == nil || !strings.Contains(err.Error(), "no such network interface") {
-		return nw, err
+		return nil, fmt.Errorf("the network already exists")
 	}
 	
 	// Create a bridge.
@@ -68,7 +68,7 @@ func (b *Bridge) Create(subnet, name string) (*Network, error) {
 	return nw, nil
 }
 	
-func (b *Bridge) Delete(network Network) error {
+func (b *BridgeDriver) Delete(network Network) error {
 	bridge, err := netlink.LinkByName(network.Name)
 	if err != nil {
 		return err
@@ -76,25 +76,39 @@ func (b *Bridge) Delete(network Network) error {
 	return netlink.LinkDel(bridge)
 }
 
-func (b *Bridge) Connect(network Network, endpoint *Endpoint) error {
+func (b *BridgeDriver) Connect(network Network, container *Container) error {
 	bridge, err := netlink.LinkByName(network.Name)
 	if err != nil {
 		return err
 	}
 
 	linkAttr := netlink.NewLinkAttrs()
-	linkAttr.Name = endpoint.id[:5]
+	linkAttr.Name = makeVethName(container.id)
 	linkAttr.MasterIndex = bridge.Attrs().Index
-
-	endpoint.device = netlink.Veth{
+	container.peerName = "cif-" + linkAttr.Name
+	veth := netlink.Veth{
 		LinkAttrs: linkAttr,
-		PeerName: "cif-" + endpoint.id[:5],
+		PeerName: container.peerName,
 	}
 
-	if err = netlink.LinkAdd(&endpoint.device); err != nil {
+	if err = netlink.LinkAdd(&veth); err != nil {
 		return err
 	}
-	if err = netlink.LinkSetUp(&endpoint.device); err != nil {
+	if err = netlink.LinkSetUp(&veth); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (b *BridgeDriver) Disconnect(container Container) error {
+	veth, err := netlink.LinkByName(makeVethName(container.id))
+	if err != nil {
+		return err
+	}
+	if err := netlink.LinkSetDown(veth); err != nil {
+		return err
+	}
+	if err := netlink.LinkDel(veth); err != nil {
 		return err
 	}
 	return nil

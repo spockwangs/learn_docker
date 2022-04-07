@@ -9,6 +9,7 @@ import (
 	"strings"
 	"syscall"
 	"path"
+	"net"
 )
 
 type RunOptions struct {
@@ -18,6 +19,13 @@ type RunOptions struct {
 	imageName     string
 	command       string
 	volumes []string
+}
+
+type Container struct {
+	id string
+	pid int
+	ip net.IP
+	peerName string
 }
 
 var runCommand = cli.Command{
@@ -144,12 +152,15 @@ var runCommand = cli.Command{
 		}
 		defer cgroup.Destroy()
 
-		if ctx.String("network") != "" && ctx.String("network") != "host" {
-			container := Container{
-				id: runOpts.containerId,
-				pid: cmd.Process.Pid,
-			}
-			if err := Connect(ctx.String("network"), container); err != nil {
+		container := Container{
+			id: runOpts.containerId,
+			pid: cmd.Process.Pid,
+		}
+		network := ctx.String("network")
+		var need_net = false
+		if network != "" && network != "host" {
+			need_net = true
+			if err := Connect(network, &container); err != nil {
 				return err
 			}
 		}
@@ -160,6 +171,11 @@ var runCommand = cli.Command{
 
 		if runOpts.createTty {
 			cmd.Wait()
+			if need_net {
+				if err := Disconnect(network, container); err != nil {
+					return err
+				}
+			}
 			if err := cleanContainerWorkspace(runOpts); err != nil {
 				return err
 			}

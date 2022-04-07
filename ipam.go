@@ -47,7 +47,7 @@ func (ipam *IPAM) Allocate(subnet *net.IPNet) (ip net.IP, err error) {
 	return
 }
 
-func (ipam *IPAM) Release(subnet *net.IPNet, ip *net.IP) error {
+func (ipam *IPAM) Release(subnet *net.IPNet, ip net.IP) error {
 	subnets, err := loadSubnets()
 	if err != nil {
 		return err

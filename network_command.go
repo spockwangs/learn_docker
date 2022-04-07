@@ -87,20 +87,25 @@ func CreateNetwork(driver, subnet, name string) error {
 	if err != nil {
 		return err
 	}
-	ip, err := ipAllocator.Allocate(ipNet)
-	if err != nil {
-		return err
-	}
-	ipNet.IP = ip
+
 	d, exist := drivers[driver]
 	if !exist {
 		return fmt.Errorf("the driver `%v` does not exist", driver)
 	}
-	network, err := d.Create(ipNet.String(), name)
+
+	ip, err := ipAllocator.Allocate(ipNet)
 	if err != nil {
 		return err
 	}
+
+	ipNet.IP = ip
+	network, err := d.Create(ipNet.String(), name)
+	if err != nil {
+		ipAllocator.Release(ipNet, ip)
+		return err
+	}
 	if err := network.Save(); err != nil {
+		ipAllocator.Release(ipNet, ip)
 		return err
 	}
 	return nil
@@ -142,7 +147,7 @@ func DeleteNetwork(networkName string) error {
 	if err != nil {
 		return err
 	}
-	if err := ipAllocator.Release(nw.IpNet, &nw.IpNet.IP); err != nil {
+	if err := ipAllocator.Release(nw.IpNet, nw.IpNet.IP); err != nil {
 		return err
 	}
 	d, exist := drivers[nw.Driver]
@@ -213,10 +218,10 @@ func makeNetworkPath(name string) string {
 }
 
 type NetworkDriver interface {
-	Name() string
 	Create(subnet string, name string) (*Network, error)
 	Delete(network Network) error
-	Connect(network Network, endpoint *Endpoint) error
+	Connect(network Network, container *Container) error
+	Disconnect(container Container) error
 }
 
 type Endpoint struct {
@@ -227,15 +232,10 @@ type Endpoint struct {
 }
 
 var drivers = map[string]NetworkDriver{
-	"bridge": &Bridge{},
+	"bridge": &BridgeDriver{},
 }
 
-type Container struct {
-	id string
-	pid int
-}
-
-func Connect(networkName string, container Container) error {
+func Connect(networkName string, container *Container) error {
 	// Create a pair of endpoints with the network.
 	network, err := NewNetwork(networkName)
 	if err != nil {
@@ -245,17 +245,13 @@ func Connect(networkName string, container Container) error {
 	if err != nil {
 		return err
 	}
-	ep := &Endpoint{
-		id: fmt.Sprintf("%s-%s", container.id, networkName),
-		ip: ip,
-		network: *network,
-	}
-	if err = drivers[network.Driver].Connect(*network, ep); err != nil {
+	container.ip = ip
+	if err = drivers[network.Driver].Connect(*network, container); err != nil {
 		return err
 	}
 
 	// Move one endpoint to the container's network namespace.
-	peerLink, err := netlink.LinkByName(ep.device.PeerName)
+	peerLink, err := netlink.LinkByName(container.peerName)
 	if err != nil {
 		return err
 	}
@@ -275,12 +271,12 @@ func Connect(networkName string, container Container) error {
 		return err
 	}
 
-	ifaceIp := *ep.network.IpNet
-	ifaceIp.IP = ep.ip
-	if err = setInterfaceIp(ep.device.PeerName, ifaceIp); err != nil {
+	ifaceIp := *network.IpNet
+	ifaceIp.IP = container.ip
+	if err = setInterfaceIp(container.peerName, ifaceIp); err != nil {
 		return err
 	}
-	if err = setInterfaceUp(ep.device.PeerName); err != nil {
+	if err = setInterfaceUp(container.peerName); err != nil {
 		return err
 	}
 	if err = setInterfaceUp("lo"); err != nil {
@@ -289,7 +285,7 @@ func Connect(networkName string, container Container) error {
 	_, ipNet, _ := net.ParseCIDR("0.0.0.0/0")
 	defaultRoute := &netlink.Route{
 		LinkIndex: peerLink.Attrs().Index,
-		Gw: ep.network.IpNet.IP,
+		Gw: network.IpNet.IP,
 		Dst: ipNet,
 	}
 	if err = netlink.RouteAdd(defaultRoute); err != nil {
@@ -300,6 +296,20 @@ func Connect(networkName string, container Container) error {
 	runtime.UnlockOSThread()
 	netFile.Close()
 
+	return nil
+}
+
+func Disconnect(networkName string, container Container) error {
+	network, err := NewNetwork(networkName)
+	if err != nil {
+		return err
+	}
+	if err := drivers[network.Driver].Disconnect(container); err != nil {
+		return err
+	}
+	if err := ipAllocator.Release(network.IpNet, container.ip); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -318,4 +328,8 @@ func setInterfaceUp(linkName string) error {
 		return err
 	}
 	return netlink.LinkSetUp(link)
+}
+
+func makeVethName(containerId string) string {
+	return fmt.Sprintf("veth%s", containerId[0:5])
 }
